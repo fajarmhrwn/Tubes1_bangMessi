@@ -6,6 +6,12 @@ public enum ObjectTypes {
   WORMHOLE(3),
   GAS_CLOUD(4),
   ASTEROID_FIELD(5);
+  TORPEDO_SALVO(6);
+  SUPER_FOOD(7);
+  SUPERNOVA_PICKUP(8);
+  SUPERNOVA_BOMB(9);
+  TELEPORTER(10);
+  SHIELD(11);
 
   public final Integer value;
 
