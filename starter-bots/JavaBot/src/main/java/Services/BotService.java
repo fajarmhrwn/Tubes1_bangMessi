@@ -35,9 +35,6 @@ public class BotService {
     }
 
     public void computeNextPlayerAction(PlayerAction playerAction) {
-        playerAction.action = PlayerActions.FORWARD;
-        playerAction.heading = new Random().nextInt(360);
-
         if (!gameState.getGameObjects().isEmpty()) {
             // Mencari makanan terdekat
             var foodList = gameState.getGameObjects()
@@ -59,27 +56,57 @@ public class BotService {
                     .collect(Collectors.toList());
 
             int enemySize = playerList.get(1).getSize();
+            double enemyDistance = getDistanceBetweenWithSize(bot, playerList.get(1));
             int mySize = bot.getSize();
+            bot.isChasingPlayer = false;
+            bot.isChasingFood = false;
+            boolean useAfterBurner = false;
 
-            if (getDistanceBetween(bot, playerList.get(1)) <= getSaveDistance(playerList.get(1)) && enemySize > mySize){
+            if (enemyDistance <= 200 && enemySize > mySize){
                 // conditional kalau ada enemy yang deket dan lebih besar
                 playerAction.heading = getHeadingAvoid(playerList.get(1));
             }
-            else if(mySize > enemySize && bot.getSize() >= 200){
-                // kalau ada yg bisa dimakan
-                playerAction.action = PlayerActions.START_AFTERBURNER;
+            else if(mySize > enemySize && enemyDistance <= 100){
+                if (bot.isChasingPlayer){
+                    useAfterBurner = true;
+                }
+                bot.isChasingPlayer = true;
                 playerAction.heading = getHeadingBetween(playerList.get(1));
+                // kalau ada yg bisa dimakan
+                // if( enemyDistance <= 100){
+                //     // playerAction.action = PlayerActions.STARTAFTERBURNER;
+                //     playerAction.action = PlayerActions.FIRETORPEDOES;
+                // } else if( enemyDistance <= 5){
+                //     playerAction.action = PlayerActions.STOPAFTERBURNER;
+                // } else {
+                //     if(bot.getTorpedoSalvoCount() >= 5){
+                //         playerAction.action = PlayerActions.FIRETORPEDOES;
+                //     }
+                // }
             } else {
                 // makan
                 playerAction.heading = getHeadingBetween(foodList.get(0));
+                bot.isChasingFood = true;
             }
 
+                
             if (getDistanceFromBorder() <= 400 ){
                 // ketika terlalu mepet ujung 
                 playerAction.heading = getHeadingFrom2(playerAction.heading, getHeadingAvoidBorder());
             }
             if (getDistanceBetweenWithSize(bot, gasCloudList.get(0)) <= 50 && isGonnaCrash(gasCloudList.get(0), playerAction.heading)){
-                playerAction.heading = getHeadingAvoidObject(gasCloudList.get(0),playerAction.heading);
+                if(!(bot.isChasingFood && (getDistanceBetweenWithSize(bot, foodList.get(0)) <= getDistanceBetweenWithSize(bot, gasCloudList.get(0))))){
+                    playerAction.heading = getHeadingAvoidObject(gasCloudList.get(0),playerAction.heading);
+                }
+                
+            }
+
+            if(!useAfterBurner && playerAction.action == PlayerActions.STARTAFTERBURNER){
+                playerAction.action = PlayerActions.STOPAFTERBURNER;
+            } else if (useAfterBurner){
+                playerAction.action = PlayerActions.STARTAFTERBURNER;
+            } else {
+                playerAction.action = PlayerActions.FORWARD;
             }
         }
             
@@ -109,7 +136,7 @@ public class BotService {
     }
 
     private double getDistanceBetweenWithSize(GameObject object1, GameObject object2) {
-        return getDistanceBetween(object1, object2) - ((object1.getSize()+object2.getSize())/2);
+        return getDistanceBetween(object1, object2) - (object1.getSize()+object2.getSize());
     }
 
     public double getDistanceFromBorder(){
@@ -136,25 +163,28 @@ public class BotService {
 
     private int getHeadingFrom2(int heading1, int heading2){
         int min = Math.min(heading1, heading2);
-        return (min + (heading2-heading1)/2 + 360) % 360;
+        int newHeading1 = (heading2-heading1 + 360) % 360;
+        int newHeading2 = (heading1-heading2 + 360) % 360;
+        int minHeading = Math.min(newHeading1,newHeading2);
+        return (min + minHeading/2 + 360) % 360;
     }
 
     private int toDegrees(double v) {
         return (int) (v * (180 / Math.PI));
     }
 
-    private int getSaveDistance(GameObject otherPlayer){
-        int speedMax = 2*otherPlayer.getSpeed() - bot.getSpeed();
-        return 10*speedMax;
-    }
+    // private int getSaveDistance(GameObject otherPlayer){
+    //     int speedMax = 2*otherPlayer.getSpeed() - bot.getSpeed();
+    //     return 100*speedMax;
+    // }
 
     private boolean isGonnaCrash(GameObject otherObject, int heading){
-        int theta = toDegrees(Math.atan2((bot.getSize() + otherObject.getSize())/2, getDistanceBetween(bot, otherObject)));
+        int theta = toDegrees(Math.atan2((bot.getSize() + otherObject.getSize()), getDistanceBetween(bot, otherObject)));
         return Math.abs(heading-getHeadingBetween(otherObject)) <= theta;
     }
 
     private int getHeadingAvoidObject(GameObject otherObject, int heading){
-        int theta = toDegrees(Math.atan2(otherObject.getSize()/2, getDistanceBetween(bot, otherObject)));
+        int theta = toDegrees(Math.atan2((bot.getSize() + otherObject.getSize()), getDistanceBetween(bot, otherObject)));
         int tilt = theta - Math.abs(heading-getHeadingBetween(otherObject));
         if (heading >= getHeadingBetween(otherObject)){
             return heading+tilt;
