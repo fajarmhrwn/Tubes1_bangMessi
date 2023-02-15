@@ -34,9 +34,13 @@ public class BotService {
     }
 
     public void computeNextPlayerAction(PlayerAction playerAction) {
+        String outStatus = "no change heading";
+        String outAction = "no change action";
         if (!gameState.getGameObjects().isEmpty()) {
+            
 
             // Mencari gas cloud terdekat
+            System.out.println(bot.getSize());
             var gasCloudList = gameState.getGameObjects()
                     .stream().filter(gas -> gas.getGameObjectType() == ObjectTypes.GAS_CLOUD)
                     .sorted(Comparator
@@ -63,6 +67,13 @@ public class BotService {
                             .comparing(item -> getDistanceBetweenWithSize(bot, item)))
                     .collect(Collectors.toList());
 
+            // list asteroid
+            var asteroidFieldList = gameState.getGameObjects()
+                    .stream().filter(asteroid -> asteroid.getGameObjectType() == ObjectTypes.ASTEROID_FIELD)
+                    .sorted(Comparator
+                            .comparing(asteroid -> getDistanceBetweenWithSize(bot, asteroid)))
+                    .collect(Collectors.toList());
+
             int enemySize = playerList.get(1).getSize();
             double enemyDistance = getDistanceBetweenWithSize(bot, playerList.get(1));
             int mySize = bot.getSize();
@@ -73,72 +84,73 @@ public class BotService {
                 // conditional kalau ada enemy yang deket dan lebih besar
                 playerAction.heading = getHeadingAvoid(playerList.get(1));
                 bot.isChasingPlayer = false;
-                System.out.println("lari dari lawan");
+                outStatus = "lari dari lawan";
             } else if ((2 * mySize > 3 * enemySize && enemyDistance <= 200)
                     || (mySize > enemySize && playerList.size() == 2)) {
                 if (bot.isChasingPlayer) {
                     playerAction.action = PlayerActions.STARTAFTERBURNER;
-                    System.out.println("idupin afterburner");
+                    outAction = "idupin afterburner";
                 }
                 bot.isChasingPlayer = true;
                 playerAction.heading = getHeadingBetween(playerList.get(1));
                 if (enemyDistance <= 10) {
                     bot.isChasingPlayer = false;
                 }
-                // kalau ada yg bisa dimakan
-                // if( enemyDistance <= 100){
-                // // playerAction.action = PlayerActions.STARTAFTERBURNER;
-                // playerAction.action = PlayerActions.FIRETORPEDOES;
-                // } else if( enemyDistance <= 5){
-                // playerAction.action = PlayerActions.STOPAFTERBURNER;
-                // } else {
-                // if(bot.getTorpedoSalvoCount() >= 5){
-                // playerAction.action = PlayerActions.FIRETORPEDOES;
-                // }
-                // }
             } else {
                 // makan
                 playerAction.heading = getHeadingBetween(foodList.get(0));
                 bot.isChasingFood = true;
                 bot.isChasingPlayer = false;
-                System.out.println("makan");
+                outStatus = "makan";
             }
 
             var gasCloudOnSightList = getNearestObjectOnSight(playerAction.heading, gasCloudList);
             if (!(gasCloudOnSightList.size() == 0)
                     && getDistanceBetweenWithSize(bot, gasCloudOnSightList.get(0)) <= 50) {
                 playerAction.heading = getHeadingFrom2(playerAction.heading, getHeadingAvoid(gasCloudOnSightList.get(0)));
-                System.out.println("gascloudtolol");
+                outStatus = "gascloudtolol";
             }
 
             if (getDistanceFromBorder(bot) <= 200) {
                 // ketika terlalu mepet ujung
                 playerAction.heading = getHeadingFrom2(playerAction.heading, getHeadingAvoidBorder());
-                System.out.println("mepet border");
+                outStatus = "mepet border";
                 if (getDistanceFromBorder(bot) <= 30) {
                     playerAction.heading = getHeadingAvoidBorder();
-                    System.out.println("udah mepet banget dari border");
+                    outStatus = "udah mepet banget dari border";
                 }
             }
 
-            if ((!bot.isChasingPlayer) && playerAction.action == PlayerActions.STARTAFTERBURNER) {
+            if ((!bot.isChasingPlayer) && bot.isUsingAfterBurner == true) {
                 playerAction.action = PlayerActions.STOPAFTERBURNER;
-                System.out.println("matiin afterburner");
-            } else if (playerAction.action != PlayerActions.STARTAFTERBURNER) {
+                outAction = "matiin afterburner";
+            } else if (! bot.isUsingAfterBurner == true) {
+                printList(torpedoList);
                 if(torpedoList.size() != 0 && getDistanceBetweenWithSize(bot, torpedoList.get(0))<=50 && bot.getShieldCount() != 0){
                     playerAction.action = PlayerActions.USESHIELD;
-                    System.out.println("useshield");
-                } else if(playerList.size()==2 && bot.getTorpedoSalvoCount() != 0 && bot.getSize() > 50){
+                    outAction = "useshield";
+                } else if(playerList.size()!=0 && bot.getTorpedoSalvoCount() != 0 && bot.getSize() > 50  && isWayClear(Stream.concat(gasCloudList.stream(), asteroidFieldList.stream()).toList(), playerList.get(1))  ){
                     playerAction.action = PlayerActions.FIRETORPEDOES;
-                    System.out.println("TEMBPIKKKKKKKKKKKKKKKK");
+                    playerAction.heading = getHeadingBetween(playerList.get(1));
+                    outAction = "TEMBPIKKKKKKKKKKKKKKKK";
+                    
                 }else {
                     playerAction.action = PlayerActions.FORWARD;
-                    System.out.println("maju");
+                    outAction = "maju";
                 }
                 
             }
+            
         }
-
+        System.out.println(outAction);
+        System.out.println(outStatus);
+        if(playerAction.action == PlayerActions.STARTAFTERBURNER){
+            bot.isUsingAfterBurner = true;
+        }
+        else if(playerAction.action == PlayerActions.STOPAFTERBURNER){
+            bot.isUsingAfterBurner = false;
+        }
+        
         this.playerAction = playerAction;
     }
 
@@ -251,6 +263,23 @@ public class BotService {
             i++;
         }
         return insideGas;
+    }
+
+    private void printList(List<GameObject> listObject){
+        listObject.stream().forEach(item -> System.out.println(item.getId()));
+    }
+
+    public boolean isWayClear(List<GameObject> objectList, GameObject target){
+        int headingPlayerToTarget = getHeadingBetween(target) % 180;
+        for (GameObject object : objectList){
+            System.out.println("teest isway");
+            System.out.println(Math.abs(getHeadingBetween(object) - headingPlayerToTarget));
+            System.out.println(toDegrees(Math.atan2(object.getSize(), getDistanceBetween(bot, object))));
+            if(Math.abs(getHeadingBetween(object) - headingPlayerToTarget) <= toDegrees(Math.atan2(object.getSize()/2, getDistanceBetween(bot, object)))){
+                return false;
+            }
+        }
+        return true;
     }
 
 }

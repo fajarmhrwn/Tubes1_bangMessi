@@ -20,6 +20,7 @@ public class GameObject {
   public boolean isUsingAfterBurner;
 
 
+
   public GameObject(UUID id, Integer size, Integer speed, Integer currentHeading, Position position, ObjectTypes gameObjectType, Integer effects, Integer torpedoSalvoCount, Integer supernovaAvailable, Integer teleporterCount, Integer shieldCount) {
     this.id = id;
     this.size = size;
