@@ -17,6 +17,7 @@ public class GameObject {
   public Integer shieldCount;
   public boolean isChasingPlayer;
   public boolean isChasingFood;
+  public boolean isUsingAfterBurner;
 
 
   public GameObject(UUID id, Integer size, Integer speed, Integer currentHeading, Position position, ObjectTypes gameObjectType, Integer effects, Integer torpedoSalvoCount, Integer supernovaAvailable, Integer teleporterCount, Integer shieldCount) {
@@ -33,6 +34,7 @@ public class GameObject {
     this.shieldCount = shieldCount;
     this.isChasingPlayer = false;
     this.isChasingFood = false;
+    this.isUsingAfterBurner = false;
     
   }
 
