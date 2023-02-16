@@ -11,13 +11,18 @@ public class GameObject {
   public Position position;
   public ObjectTypes gameObjectType;
   public Integer effects;
-  public Integer torpedSalvoCount;
+  public Integer torpedoSalvoCount;
   public Integer supernovaAvailable;
   public Integer teleporterCount;
   public Integer shieldCount;
+  public boolean isChasingPlayer;
+  public boolean isChasingFood;
+  public boolean isUsingAfterBurner;
+  public boolean teleporterLaunched;
 
 
-  public GameObject(UUID id, Integer size, Integer speed, Integer currentHeading, Position position, ObjectTypes gameObjectType, Integer effects, Integer torpedSalvoCount, Integer supernovaAvailable, Integer teleporterCount, Integer shieldCount) {
+
+  public GameObject(UUID id, Integer size, Integer speed, Integer currentHeading, Position position, ObjectTypes gameObjectType, Integer effects, Integer torpedoSalvoCount, Integer supernovaAvailable, Integer teleporterCount, Integer shieldCount) {
     this.id = id;
     this.size = size;
     this.speed = speed;
@@ -25,10 +30,14 @@ public class GameObject {
     this.position = position;
     this.gameObjectType = gameObjectType;
     this.effects = effects;
-    this.torpedSalvoCount = torpedSalvoCount;
+    this.torpedoSalvoCount = torpedoSalvoCount;
     this.supernovaAvailable = supernovaAvailable;
     this.teleporterCount = teleporterCount;
     this.shieldCount = shieldCount;
+    this.isChasingPlayer = false;
+    this.isChasingFood = false;
+    this.isUsingAfterBurner = false;
+    this.teleporterLaunched = false;
     
   }
 
@@ -70,6 +79,38 @@ public class GameObject {
 
   public void setGameObjectType(ObjectTypes gameObjectType) {
     this.gameObjectType = gameObjectType;
+  }
+
+  public int getTorpedoSalvoCount(){
+    return torpedoSalvoCount;
+  }
+
+  public void setTorpedoSalvoCount(int torpedoSalvoCount) {
+    this.torpedoSalvoCount = torpedoSalvoCount;
+  }
+
+  public int getSupernovaAvailable(){
+    return supernovaAvailable;
+  }
+
+  public void setsupernovaAvailable(int supernovaAvailable) {
+    this.supernovaAvailable = supernovaAvailable;
+  }
+
+  public int getTeleporterCount(){
+    return teleporterCount;
+  }
+
+  public void setTeleporterCount(int teleporterCount) {
+    this.teleporterCount = teleporterCount;
+  }
+
+  public int getShieldCount(){
+    return shieldCount;
+  }
+
+  public void setShieldCount(int shieldCount) {
+    this.shieldCount = shieldCount;
   }
 
   public static GameObject FromStateList(UUID id, List<Integer> stateList)
