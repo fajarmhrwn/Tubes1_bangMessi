@@ -64,6 +64,9 @@ public class BotService {
         // System.out.println(outStatus);
         
         this.playerAction = playerAction;
+        System.out.println("Your Action: ");
+        System.out.println(playerAction.getAction());
+        System.out.println("");
     }
 
     public GameState getGameState() {
@@ -134,7 +137,7 @@ public class BotService {
             playerAction.action = PlayerActions.STOPAFTERBURNER;
             System.out.println("Stop AfterBurner");
         } else {
-            if(isTorpedoGoingToHitMe(torpedoList) && bot.getShieldCount() != 0){
+            if(isTorpedoGoingToHitMe(torpedoList) && bot.getSize()>=25){
                 // Cek apakah harus menggunakan shield
                 playerAction.action = PlayerActions.USESHIELD;
                 System.out.println("Using Shield");
@@ -234,7 +237,7 @@ public class BotService {
         boolean insideGas = false;
         int i = 0;
         while (i < gasCloudList.size() && !insideGas) {
-            if (getDistanceBetweenWithSize(otherObject, gasCloudList.get(i)) <= 5) {
+            if (getDistanceBetweenWithSize(otherObject, gasCloudList.get(i)) <= 10) {
                 insideGas = true;
             }
             i++;
@@ -246,9 +249,9 @@ public class BotService {
         // Menentukan apakah jalur didepan bot bersih dari object lain
         int headingPlayerToTarget = getHeadingBetween(target) % 180;
         for (GameObject object : objectList){
-            System.out.println("teest isway");
-            System.out.println(Math.abs(getHeadingBetween(object) - headingPlayerToTarget));
-            System.out.println(toDegrees(Math.atan2(object.getSize(), getDistanceBetween(bot, object))));
+            // System.out.println("teest isway");
+            // System.out.println(Math.abs(getHeadingBetween(object) - headingPlayerToTarget));
+            // System.out.println(toDegrees(Math.atan2(object.getSize(), getDistanceBetween(bot, object))));
             if(Math.abs(getHeadingBetween(object) - headingPlayerToTarget) <= toDegrees(Math.atan2(object.getSize()/2, getDistanceBetween(bot, object)))){
                 return false;
             }
@@ -260,7 +263,7 @@ public class BotService {
         // Menentukan apakah ada torpedo yang berada di dekat bot
         if(torpedoList.size()!=0){
             for (GameObject torpedo : torpedoList) {
-                if(getDistanceBetweenWithSize(bot, torpedo) <= 10){
+                if(getDistanceBetweenWithSize(bot, torpedo) <= 30){
                     return true;
                 }
             }
