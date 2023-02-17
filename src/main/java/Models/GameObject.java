@@ -15,7 +15,6 @@ public class GameObject {
   public Integer supernovaAvailable;
   public Integer teleporterCount;
   public Integer shieldCount;
-  public boolean isChasingPlayer;
   public boolean isUsingAfterBurner;
 
 
@@ -32,7 +31,6 @@ public class GameObject {
     this.supernovaAvailable = supernovaAvailable;
     this.teleporterCount = teleporterCount;
     this.shieldCount = shieldCount;
-    this.isChasingPlayer = false;
     this.isUsingAfterBurner = false;
     
   }
