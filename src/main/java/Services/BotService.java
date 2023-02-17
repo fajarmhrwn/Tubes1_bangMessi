@@ -60,8 +60,6 @@ public class BotService {
             getNextAction(gasCloudList, playerList, torpedoList, asteroidFieldList);
             
         }
-        // System.out.println(outAction);
-        // System.out.println(outStatus);
         
         this.playerAction = playerAction;
         System.out.println("Your Action: ");
@@ -89,15 +87,16 @@ public class BotService {
         if (enemyDistance <= 200 && enemySize > mySize) {
             // conditional kalau ada enemy yang deket dan lebih besar
             playerAction.heading = getHeadingAvoid(playerList.get(1));
-            // outStatus = "lari dari lawan";
+
         } else if ((mySize > enemySize && enemyDistance <= 6*mySize)) {
             playerAction.heading = getHeadingBetween(playerList.get(1));
+            // conditional kalau harus menggunakan afterburner
             if((enemyDistance<=2*mySize && enemyDistance>=0.5*mySize)){
                 bot.isUsingAfterBurner = true;
             }
         } else {
             if(foodList.size()!=0){
-                // makan
+                // conditional saat hanya 
                 playerAction.heading = getHeadingBetween(foodList.get(0));
                 System.out.println("Eat food");
             } else {
@@ -116,7 +115,7 @@ public class BotService {
         }
 
         if (getDistanceFromBorder(bot) <= 1*mySize) {
-            // ketika terlalu mepet ujung
+            // Ketika terlalu mepet ujung
             playerAction.heading = getHeadingFrom2(playerAction.heading, getHeadingAvoidBorder());
             System.out.println("Avoid Border");
             if (getDistanceFromBorder(bot) <= 0.5*mySize) {
