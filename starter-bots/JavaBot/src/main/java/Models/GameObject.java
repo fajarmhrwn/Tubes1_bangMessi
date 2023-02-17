@@ -16,7 +16,6 @@ public class GameObject {
   public Integer teleporterCount;
   public Integer shieldCount;
   public boolean isChasingPlayer;
-  public boolean isChasingFood;
   public boolean isUsingAfterBurner;
 
 
@@ -34,7 +33,6 @@ public class GameObject {
     this.teleporterCount = teleporterCount;
     this.shieldCount = shieldCount;
     this.isChasingPlayer = false;
-    this.isChasingFood = false;
     this.isUsingAfterBurner = false;
     
   }
