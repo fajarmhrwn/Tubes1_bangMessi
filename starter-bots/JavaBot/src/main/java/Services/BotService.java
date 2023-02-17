@@ -34,8 +34,6 @@ public class BotService {
     }
 
     public void computeNextPlayerAction(PlayerAction playerAction) {
-        String outStatus = "no change heading";
-        String outAction = "no change action";
         if (!gameState.getGameObjects().isEmpty()) {            
             
             int mySize = bot.getSize();
@@ -50,79 +48,20 @@ public class BotService {
             var playerList = objectList.getPlayerList();
             var torpedoList = objectList.getTorpedoList();
             var asteroidFieldList = objectList.getAsteroidFieldList();
-            
 
             // Data Player Terdekat
             int enemySize = playerList.get(1).getSize();
             double enemyDistance = getDistanceBetweenWithSize(bot, playerList.get(1));
 
-            // Conditional Penentu Heading
-            if (enemyDistance <= 200 && enemySize > mySize) {
-                // conditional kalau ada enemy yang deket dan lebih besar
-                playerAction.heading = getHeadingAvoid(playerList.get(1));
-                outStatus = "lari dari lawan";
-            } else if ((mySize > enemySize && enemyDistance <= 6*mySize)) {
-                playerAction.heading = getHeadingBetween(playerList.get(1));
-                if((enemyDistance<=2*mySize && enemyDistance>=0.5*mySize)){
-                    bot.isUsingAfterBurner = true;
-                }
-            } else {
-                if(foodList.size()!=0){
-                    // makan
-                    playerAction.heading = getHeadingBetween(foodList.get(0));
-                    outStatus = "makan";
-                } else {
-                    playerAction.heading = getHeadingAvoid(playerList.get(1));
-                }
-                
-            }
-
-            var gasCloudOnSightList = getNearestObjectOnSight(playerAction.heading, gasCloudList);
-            if (!(gasCloudOnSightList.size() == 0)){
-                if (getDistanceBetweenWithSize(bot, gasCloudOnSightList.get(0)) <= 50) {
-                    playerAction.heading = getHeadingFrom2(playerAction.heading, getHeadingAvoid(gasCloudOnSightList.get(0)));
-                } else if (getDistanceBetweenWithSize(bot, gasCloudOnSightList.get(0)) <= 10){
-                    playerAction.heading = getHeadingAvoid(gasCloudOnSightList.get(0));
-                }
-                    outStatus = "gascloudtolol";
-            }
-
-            if (getDistanceFromBorder(bot) <= 1*mySize) {
-                // ketika terlalu mepet ujung
-                playerAction.heading = getHeadingFrom2(playerAction.heading, getHeadingAvoidBorder());
-                outStatus = "mepet border";
-                if (getDistanceFromBorder(bot) <= 0.5*mySize) {
-                    playerAction.heading = getHeadingAvoidBorder();
-                    outStatus = "udah mepet banget dari border";
-                }
-            }
-
-            // Conditional untuk tick selanjutnya
-            if (bot.isUsingAfterBurner) {
-                playerAction.action = PlayerActions.STARTAFTERBURNER;
-                outAction = "idupin afterburner";
-            } else if(getPlayerAction().getAction() == PlayerActions.STARTAFTERBURNER){
-                playerAction.action = PlayerActions.STOPAFTERBURNER;
-                outAction = "matiin afterburner";
-            } else {
-                if(torpedoList.size() != 0 && isTorpedoGoingToHitMe(torpedoList) && bot.getShieldCount() != 0){
-                    playerAction.action = PlayerActions.USESHIELD;
-                    outAction = "useshield";
-                } else if(bot.getTorpedoSalvoCount() != 0 && bot.getSize() > 50  && isWayClear(Stream.concat(gasCloudList.stream(), asteroidFieldList.stream()).toList(), playerList.get(1))  ){
-                    playerAction.action = PlayerActions.FIRETORPEDOES;
-                    playerAction.heading = getHeadingBetween(playerList.get(1));
-                    outAction = "TEMBPIKKKKKKKKKKKKKKKK";
-                    
-                }else {
-                    playerAction.action = PlayerActions.FORWARD;
-                    outAction = "maju";
-                }
-                
-            }
+            // Menentukan Heading Untuk Next Tick
+            getHeading(mySize, enemySize, enemyDistance, playerList, foodList, gasCloudList);
+            
+            // Menentuken PlayerAction untuk next tick
+            getNextAction(gasCloudList, playerList, torpedoList, asteroidFieldList);
             
         }
-        System.out.println(outAction);
-        System.out.println(outStatus);
+        // System.out.println(outAction);
+        // System.out.println(outStatus);
         
         this.playerAction = playerAction;
     }
@@ -142,39 +81,116 @@ public class BotService {
         optionalBot.ifPresent(bot -> this.bot = bot);
     }
 
+    private void getHeading(int mySize, int enemySize, double enemyDistance, List<GameObject> playerList, List<GameObject> foodList, List<GameObject> gasCloudList ) {
+        // Conditional Penentu Heading
+        if (enemyDistance <= 200 && enemySize > mySize) {
+            // conditional kalau ada enemy yang deket dan lebih besar
+            playerAction.heading = getHeadingAvoid(playerList.get(1));
+            // outStatus = "lari dari lawan";
+        } else if ((mySize > enemySize && enemyDistance <= 6*mySize)) {
+            playerAction.heading = getHeadingBetween(playerList.get(1));
+            if((enemyDistance<=2*mySize && enemyDistance>=0.5*mySize)){
+                bot.isUsingAfterBurner = true;
+            }
+        } else {
+            if(foodList.size()!=0){
+                // makan
+                playerAction.heading = getHeadingBetween(foodList.get(0));
+                System.out.println("Eat food");
+            } else {
+                playerAction.heading = getHeadingAvoid(playerList.get(1));
+            }  
+        }
+
+        var gasCloudOnSightList = getNearestObjectOnSight(playerAction.heading, gasCloudList);
+        if (!(gasCloudOnSightList.size() == 0)){
+            if (getDistanceBetweenWithSize(bot, gasCloudOnSightList.get(0)) <= 50) {
+                playerAction.heading = getHeadingFrom2(playerAction.heading, getHeadingAvoid(gasCloudOnSightList.get(0)));
+            } else if (getDistanceBetweenWithSize(bot, gasCloudOnSightList.get(0)) <= 10){
+                playerAction.heading = getHeadingAvoid(gasCloudOnSightList.get(0));
+            }
+                System.out.println("Avoid Gas Cloud");
+        }
+
+        if (getDistanceFromBorder(bot) <= 1*mySize) {
+            // ketika terlalu mepet ujung
+            playerAction.heading = getHeadingFrom2(playerAction.heading, getHeadingAvoidBorder());
+            System.out.println("Avoid Border");
+            if (getDistanceFromBorder(bot) <= 0.5*mySize) {
+                playerAction.heading = getHeadingAvoidBorder();
+                System.out.println("Avoid Border with critical distance");
+            }
+        }
+    }
+
+    private void getNextAction(List<GameObject> gasCloudList, List<GameObject> playerList, List<GameObject> torpedoList, List<GameObject> asteroidFieldList){
+        // Conditional untuk tick selanjutnya
+        if (bot.isUsingAfterBurner) {
+            // Cek apakah bot sedang menggunakan afterburner
+            playerAction.action = PlayerActions.STARTAFTERBURNER;
+            System.out.println("Start AfterBurner");
+        } else if(getPlayerAction().getAction() == PlayerActions.STARTAFTERBURNER){
+            // Cek apakah bot sudah harus mematikan afterburner
+            playerAction.action = PlayerActions.STOPAFTERBURNER;
+            System.out.println("Stop AfterBurner");
+        } else {
+            if(isTorpedoGoingToHitMe(torpedoList) && bot.getShieldCount() != 0){
+                // Cek apakah harus menggunakan shield
+                playerAction.action = PlayerActions.USESHIELD;
+                System.out.println("Using Shield");
+            } else if(bot.getTorpedoSalvoCount() != 0 && bot.getSize() > 50  && isWayClear(Stream.concat(gasCloudList.stream(), asteroidFieldList.stream()).toList(), playerList.get(1))  ){
+                // Cek apakah harus menembakkan torpedoes
+                playerAction.action = PlayerActions.FIRETORPEDOES;
+                playerAction.heading = getHeadingBetween(playerList.get(1));
+                System.out.println("Firing Torpedoes"); 
+            }else {
+                // Cek apakah harus maju
+                playerAction.action = PlayerActions.FORWARD;
+                System.out.println("Going Forward");
+            }   
+        }
+    }
+    
     public double getDistanceBetween(GameObject object1, GameObject object2) {
+        // Menemukan distance antara 2 object berdasaarkan koordinat object 
         var triangleX = Math.abs(object1.getPosition().x - object2.getPosition().x);
         var triangleY = Math.abs(object1.getPosition().y - object2.getPosition().y);
         return Math.sqrt(triangleX * triangleX + triangleY * triangleY);
     }
 
     public double getDistanceBetweenWithSize(GameObject object1, GameObject object2) {
+        // Menemukan distance antara 2 object berdasaarkan koordinat object memperhitungkan size object
         return getDistanceBetween(object1, object2) - (object1.getSize() + object2.getSize());
     }
 
     public double getDistanceFromBorder(GameObject object) {
+        // Menemukan distance object ke border
         Position position = new Position(0, 0);
         GameObject center = new GameObject(null, 0, null, null, position, null, null, null, null, null, null);
         return gameState.getWorld().getRadius() - (getDistanceBetween(object, center) + object.getSize());
     }
 
     public int getHeadingBetween(GameObject otherObject) {
+        // Mendapatkan heading bot ke otherObject
         var direction = toDegrees(Math.atan2(otherObject.getPosition().y - bot.getPosition().y,
                 otherObject.getPosition().x - bot.getPosition().x));
         return (direction + 360) % 360;
     }
 
     public int getHeadingAvoid(GameObject otherObject) {
+        // Mendapatkan heading bot ke arah berlawanan otherObject
         return (getHeadingBetween(otherObject) + 180) % 360;
     }
 
     public int getHeadingAvoidBorder() {
+        // Mendapatkan heading bot ke tengah map
         Position position = new Position(0, 0);
         GameObject center = new GameObject(null, null, null, null, position, null, null, null, null, null, null);
         return getHeadingBetween(center);
     }
 
     public int getHeadingFrom2(int heading1, int heading2) {
+        // Mendapatkan resultan heading dari 2 heading diberikan
         int min = Math.min(heading1, heading2);
         int newHeading1 = (heading2 - heading1 + 360) % 360;
         int newHeading2 = (heading1 - heading2 + 360) % 360;
@@ -182,11 +198,8 @@ public class BotService {
         return (min + minHeading / 2 + 360) % 360;
     }
 
-    public int toDegrees(double v) {
-        return (int) (v * (180 / Math.PI));
-    }
-
     public List<GameObject> getNearestObjectOnSight(int heading, List<GameObject> objectList) {
+        // Mendapatkan list object yang berisi saringan list object yang ada di hadapan heading
         var objectCollide = objectList.stream()
                 .filter(object -> isCollide(heading, object) == true)
                 .sorted(Comparator.comparing(gas -> getDistanceBetweenWithSize(bot, gas)))
@@ -195,8 +208,7 @@ public class BotService {
     }
 
     public boolean isCollide(int heading, GameObject otherObject) {
-        // Memprediksi lokasi bot di masa depan apakah akan collide dengan object atau
-        // tidak
+        // Memprediksi lokasi bot di masa depan apakah akan collide dengan object atau tidak
         int headingToObject = getHeadingBetween(otherObject);
         double distance = getDistanceBetween(bot, otherObject);
         if (heading != headingToObject && Math.abs(heading - headingToObject) < 90) {
@@ -218,6 +230,7 @@ public class BotService {
     }
 
     public boolean isInsideGas(GameObject otherObject, List<GameObject> gasCloudList) {
+        // Menentukan apakah suatu object berada di dalam gasCloud atau tidak
         boolean insideGas = false;
         int i = 0;
         while (i < gasCloudList.size() && !insideGas) {
@@ -230,6 +243,7 @@ public class BotService {
     }
 
     public boolean isWayClear(List<GameObject> objectList, GameObject target){
+        // Menentukan apakah jalur didepan bot bersih dari object lain
         int headingPlayerToTarget = getHeadingBetween(target) % 180;
         for (GameObject object : objectList){
             System.out.println("teest isway");
@@ -243,12 +257,19 @@ public class BotService {
     }
 
     private boolean isTorpedoGoingToHitMe(List<GameObject> torpedoList){
-        for (GameObject torpedo : torpedoList){
-            if (getDistanceBetweenWithSize(bot, torpedo) <= 5){
-                return true;
+        // Menentukan apakah ada torpedo yang berada di dekat bot
+        if(torpedoList.size()!=0){
+            for (GameObject torpedo : torpedoList) {
+                if(getDistanceBetweenWithSize(bot, torpedo) <= 10){
+                    return true;
+                }
             }
         }
         return false;
+    }
+
+    public int toDegrees(double v) {
+        return (int) (v * (180 / Math.PI));
     }
 
 }
